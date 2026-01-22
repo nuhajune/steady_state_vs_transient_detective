@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Steady-State vs Transient Detective - SBED Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f3f4f6;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        .scenario-card {
+            cursor: move;
+            transition: all 0.3s ease;
+        }
+        .scenario-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .drop-zone {
+            min-height: 300px;
+            transition: all 0.3s ease;
+        }
+        .drop-zone.drag-over {
+            background-color: #dbeafe;
+            border-color: #3b82f6;
+        }
+        .correct {
+            border: 3px solid #10b981;
+            background-color: #d1fae5;
+        }
+        .incorrect {
+            border: 3px solid #ef4444;
+            background-color: #fee2e2;
+        }
+        .tab-active {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .tab-inactive {
+            background-color: #e5e7eb;
+            color: #374151;
+        }
+    </style>
+</head>
+<body class="p-6">
+    <div id="app" class="w-full max-w-7xl mx-auto p-6 bg-white rounded-lg shadow-lg">
+        <!-- Header with logo and name -->
+        <div class="flex items-center justify-between mb-6 pb-4 border-b-2 border-gray-200">
+            <div class="flex-1">
+                <h1 class="text-3xl font-bold mb-1 text-gray-800">Steady-State vs Transient Detective</h1>
+                <p class="text-gray-600">Master the difference: When does temperature depend on time?</p>
+                <p class="text-sm text-gray-500 mt-2">Dr. Nuha AlJuneidi | Lawrence Technological University</p>
+            </div>
+            <div class="flex flex-col items-center ml-6">
+                <!-- SBED Lab Logo -->
+                <svg width="120" height="120" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="70" y="40" width="25" height="60" fill="#1e3a5f" stroke="#0ea5e9" stroke-width="3"/>
+                    <rect x="100" y="30" width="30" height="70" fill="#1e3a5f" stroke="#0ea5e9" stroke-width="3"/>
+                    <rect x="135" y="45" width="20" height="55" fill="#1e3a5f" stroke="#0ea5e9" stroke-width="3"/>
+                    <rect x="75" y="45" width="5" height="7" fill="white"/>
+                    <rect x="82" y="45" width="5" height="7" fill="white"/>
+                    <rect x="75" y="55" width="5" height="7" fill="white"/>
+                    <rect x="82" y="55" width="5" height="7" fill="white"/>
+                    <rect x="75" y="65" width="5" height="7" fill="white"/>
+                    <rect x="82" y="65" width="5" height="7" fill="white"/>
+                    <rect x="105" y="38" width="5" height="7" fill="white"/>
+                    <rect x="113" y="38" width="5" height="7" fill="white"/>
+                    <rect x="121" y="38" width="5" height="7" fill="white"/>
+                    <rect x="105" y="50" width="5" height="7" fill="white"/>
+                    <rect x="113" y="50" width="5" height="7" fill="white"/>
+                    <rect x="121" y="50" width="5" height="7" fill="white"/>
+                    <rect x="105" y="62" width="5" height="7" fill="white"/>
+                    <rect x="113" y="62" width="5" height="7" fill="white"/>
+                    <rect x="121" y="62" width="5" height="7" fill="white"/>
+                    <rect x="140" y="52" width="4" height="6" fill="white"/>
+                    <rect x="146" y="52" width="4" height="6" fill="white"/>
+                    <rect x="140" y="62" width="4" height="6" fill="white"/>
+                    <rect x="146" y="62" width="4" height="6" fill="white"/>
+                    <path d="M 30 110 Q 50 100 70 110 T 110 110 Q 130 100 150 110 T 190 110" 
+                          stroke="#0ea5e9" stroke-width="3" fill="none"/>
+                    <path d="M 30 117 Q 50 107 70 117 T 110 117 Q 130 107 150 117 T 190 117" 
+                          stroke="#0ea5e9" stroke-width="2" fill="none" opacity="0.7"/>
+                    <path d="M 30 124 Q 50 114 70 124 T 110 124 Q 130 114 150 124 T 190 124" 
+                          stroke="#10b981" stroke-width="2" fill="none" opacity="0.6"/>
+                    <circle cx="25" cy="60" r="6" fill="#0ea5e9"/>
+                    <circle cx="35" cy="70" r="4" fill="#0ea5e9"/>
+                    <circle cx="40" cy="55" r="4" fill="#0ea5e9"/>
+                    <line x1="25" y1="60" x2="35" y2="70" stroke="#0ea5e9" stroke-width="2"/>
+                    <line x1="25" y1="60" x2="40" y2="55" stroke="#0ea5e9" stroke-width="2"/>
+                    <circle cx="175" cy="65" r="4" fill="#10b981"/>
+                    <circle cx="183" cy="75" r="5" fill="#10b981"/>
+                    <circle cx="168" cy="80" r="4" fill="#10b981"/>
+                    <line x1="175" y1="65" x2="183" y2="75" stroke="#10b981" stroke-width="2"/>
+                </svg>
+                <div class="text-center mt-2">
+                    <div class="text-lg font-bold text-gray-700">SBED LAB</div>
+                    <div class="text-xs text-gray-600">Smart Building Energy Dynamics</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="flex gap-2 mb-6">
+            <button id="detectiveTab" class="tab-active px-6 py-3 rounded-lg font-semibold text-lg transition-all" onclick="showMode('detective')">
+                🕵️ Detective Mode
+            </button>
+            <button id="evolutionTab" class="tab-inactive px-6 py-3 rounded-lg font-semibold text-lg transition-all" onclick="showMode('evolution')">
+                ⏱️ Time Evolution Challenge
+            </button>
+        </div>
+
+        <!-- Detective Mode -->
+        <div id="detectiveMode" class="block">
+            <div class="mb-6 p-4 bg-blue-50 border-2 border-blue-300 rounded-lg">
+                <h3 class="font-bold text-lg mb-2">🎯 Your Mission:</h3>
+                <p class="text-sm">Drag each scenario into the correct category. Is the temperature changing with time (Transient) or has it reached equilibrium (Steady-State)?</p>
+                <p class="text-xs text-gray-600 mt-2"><strong>Hint:</strong> Ask yourself "Is ∂T/∂t = 0?"</p>
+            </div>
+
+            <div class="mb-4 flex justify-between items-center">
+                <div class="text-lg font-semibold">Score: <span id="score" class="text-blue-600">0</span> / <span id="total">10</span></div>
+                <button onclick="resetDetective()" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">↻ Reset</button>
+            </div>
+
+            <!-- Scenario Cards -->
+            <div id="scenarioCards" class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6"></div>
+
+            <!-- Drop Zones -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div id="transientZone" class="drop-zone border-4 border-dashed border-red-300 rounded-lg p-4 bg-red-50">
+                    <h3 class="text-xl font-bold text-red-700 mb-3 text-center">🔥 TRANSIENT</h3>
+                    <p class="text-sm text-center text-gray-600 mb-4">Temperature changes with time<br>(∂T/∂t ≠ 0)</p>
+                    <div id="transientCards" class="space-y-2 min-h-[200px]"></div>
+                </div>
+
+                <div id="steadyZone" class="drop-zone border-4 border-dashed border-blue-300 rounded-lg p-4 bg-blue-50">
+                    <h3 class="text-xl font-bold text-blue-700 mb-3 text-center">❄️ STEADY-STATE</h3>
+                    <p class="text-sm text-center text-gray-600 mb-4">Temperature constant in time<br>(∂T/∂t = 0)</p>
+                    <div id="steadyCards" class="space-y-2 min-h-[200px]"></div>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div id="detectiveResults" class="mt-6 hidden"></div>
+        </div>
+
+        <!-- Time Evolution Mode -->
+        <div id="evolutionMode" class="hidden">
+            <div class="mb-6 p-4 bg-purple-50 border-2 border-purple-300 rounded-lg">
+                <h3 class="font-bold text-lg mb-2">⏱️ Your Challenge:</h3>
+                <p class="text-sm">Watch the temperature evolution. Click "Use Steady-State" when you think ∂T/∂t ≈ 0 and steady-state analysis is valid!</p>
+            </div>
+
+            <!-- Scenario Selection -->
+            <div class="mb-6">
+                <h3 class="font-semibold mb-2">Select Scenario:</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2" id="evolutionScenarios"></div>
+            </div>
+
+            <!-- Visualization Area -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Graph -->
+                <div class="border-2 border-gray-300 rounded-lg p-4 bg-gray-50">
+                    <h3 class="font-semibold mb-2 text-center" id="scenarioTitle">Select a scenario</h3>
+                    <svg id="evolutionGraph" width="100%" height="350"></svg>
+                    
+                    <div class="mt-4 flex justify-center gap-3">
+                        <button id="playEvolution" class="px-6 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 font-semibold" onclick="playEvolution()">▶ Start</button>
+                        <button id="steadyStateBtn" class="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-semibold" onclick="checkSteadyState()" disabled>
+                            Use Steady-State Now!
+                        </button>
+                        <button onclick="resetEvolution()" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">↻ Reset</button>
+                    </div>
+                </div>
+
+                <!-- Info Panel -->
+                <div class="space-y-4">
+                    <div class="border-2 border-gray-300 rounded-lg p-4">
+                        <h4 class="font-semibold mb-2">Current State:</h4>
+                        <div class="space-y-2 text-sm">
+                            <div>Time elapsed: <strong><span id="timeElapsed">0</span>s</strong></div>
+                            <div>Temperature at midpoint: <strong><span id="tempMid">20.0</span>°C</strong></div>
+                            <div>Rate of change: <strong><span id="tempRate">--</span>°C/s</strong></div>
+                        </div>
+                    </div>
+
+                    <div id="evolutionFeedback" class="hidden"></div>
+
+                    <div class="border-2 border-yellow-300 bg-yellow-50 rounded-lg p-4">
+                        <h4 class="font-semibold mb-2">📚 What to Look For:</h4>
+                        <ul class="text-sm space-y-1 list-disc ml-5">
+                            <li>Temperature curve flattening out</li>
+                            <li>Rate of change approaching zero</li>
+                            <li>Temperature stabilizing at midpoint</li>
+                            <li>When temperature stops changing, steady-state applies!</li>
+                        </ul>
+                    </div>
+
+                    <div class="border-2 border-blue-300 bg-blue-50 rounded-lg p-4">
+                        <h4 class="font-semibold mb-2">📐 Equations:</h4>
+                        <div class="text-sm space-y-2">
+                            <div><strong>Transient:</strong> ∂T/∂t = α·∂²T/∂x²</div>
+                            <div><strong>Steady-State:</strong> q = k·A·ΔT/L</div>
+                            <div class="text-xs text-gray-600 mt-2">When ∂T/∂t ≈ 0, use steady-state!</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Scenario database
+        const scenarios = [
+            {
+                id: 1,
+                name: "Hot Coffee Cooling",
+                description: "Coffee cup sitting on desk for 5 minutes",
+                type: "transient",
+                explanation: "Temperature is actively dropping. ∂T/∂t < 0. Classic transient cooling problem.",
+                icon: "☕"
+            },
+            {
+                id: 2,
+                name: "Building Wall (Winter)",
+                description: "Exterior wall after 2 months of constant outdoor temp",
+                type: "steady",
+                explanation: "After 2 months, temperature profile is stable. ∂T/∂t ≈ 0. Use q = k·A·ΔT/L for heat loss.",
+                icon: "🏠"
+            },
+            {
+                id: 3,
+                name: "Frying Pan Heating",
+                description: "Pan on stove for 30 seconds",
+                type: "transient",
+                explanation: "Pan temperature is rising rapidly. ∂T/∂t > 0. Need transient analysis.",
+                icon: "🍳"
+            },
+            {
+                id: 4,
+                name: "Insulated Pipe",
+                description: "Steam pipe running for 6 hours at constant temp",
+                type: "steady",
+                explanation: "After 6 hours, temperature profile is stable. ∂T/∂t = 0. Use steady-state heat loss equation.",
+                icon: "🔧"
+            },
+            {
+                id: 5,
+                name: "PCM Charging",
+                description: "Phase change material absorbing heat for 10 minutes",
+                type: "transient",
+                explanation: "PCM temperature is changing as it melts. ∂T/∂t ≠ 0. Definitely transient!",
+                icon: "🔋"
+            },
+            {
+                id: 6,
+                name: "Freezer Wall",
+                description: "Freezer running continuously for 1 week",
+                type: "steady",
+                explanation: "After 1 week of operation, temp is stable. ∂T/∂t = 0. Use steady-state for energy calc.",
+                icon: "🧊"
+            },
+            {
+                id: 7,
+                name: "Metal Rod Quenching",
+                description: "Hot steel rod plunged into water",
+                type: "transient",
+                explanation: "Rapid cooling process. Temperature dropping fast. ∂T/∂t << 0. Transient analysis required.",
+                icon: "🔥"
+            },
+            {
+                id: 8,
+                name: "Window Heat Loss",
+                description: "House window during steady winter conditions",
+                type: "steady",
+                explanation: "Window at constant inside/outside temps. ∂T/∂t = 0. Steady-state U-value calculation applies.",
+                icon: "🪟"
+            },
+            {
+                id: 9,
+                name: "Concrete Slab Warming",
+                description: "Floor slab exposed to sun for 1 hour",
+                type: "transient",
+                explanation: "Concrete still absorbing heat. ∂T/∂t > 0. Thermal mass effect - transient analysis needed.",
+                icon: "🏗️"
+            },
+            {
+                id: 10,
+                name: "Oven at Set Temp",
+                description: "Oven at 350°F for 30 minutes",
+                type: "steady",
+                explanation: "Oven reached setpoint and stabilized. ∂T/∂t = 0. Steady-state heat transfer through walls.",
+                icon: "🔥"
+            }
+        ];
+
+        // Evolution scenarios
+        const evolutionScenarios = [
+            {
+                name: "Aluminum Plate",
+                alpha: 84e-6, // m²/s
+                steadyTime: 120, // seconds when approximately steady
+                description: "High diffusivity - reaches steady-state FAST"
+            },
+            {
+                name: "Concrete Wall",
+                alpha: 0.69e-6,
+                steadyTime: 1800,
+                description: "Low diffusivity - takes LONG time"
+            },
+            {
+                name: "Steel Rod",
+                alpha: 13e-6,
+                steadyTime: 300,
+                description: "Moderate diffusivity"
+            },
+            {
+                name: "Wood Panel",
+                alpha: 0.096e-6,
+                steadyTime: 2400,
+                description: "Very low diffusivity - very slow"
+            }
+        ];
+
+        let draggedCard = null;
+        let score = 0;
+        let attempts = 0;
+        let placedCards = new Set();
+
+        // Evolution mode variables
+        let currentScenario = null;
+        let evolutionTime = 0;
+        let evolutionInterval = null;
+        let isEvolutionPlaying = false;
+
+        // Initialize detective mode
+        function initDetective() {
+            const container = document.getElementById('scenarioCards');
+            container.innerHTML = '';
+            
+            scenarios.forEach(scenario => {
+                const card = createScenarioCard(scenario);
+                container.appendChild(card);
+            });
+
+            document.getElementById('total').textContent = scenarios.length;
+        }
+
+        function createScenarioCard(scenario) {
+            const card = document.createElement('div');
+            card.className = 'scenario-card bg-white p-4 rounded-lg shadow-md border-2 border-gray-300';
+            card.draggable = true;
+            card.dataset.id = scenario.id;
+            card.dataset.type = scenario.type;
+            
+            card.innerHTML = `
+                <div class="text-3xl text-center mb-2">${scenario.icon}</div>
+                <div class="text-sm font-semibold text-center">${scenario.name}</div>
+                <div class="text-xs text-gray-600 text-center mt-1">${scenario.description}</div>
+            `;
+
+            card.addEventListener('dragstart', handleDragStart);
+            card.addEventListener('dragend', handleDragEnd);
+
+            return card;
+        }
+
+        function handleDragStart(e) {
+            draggedCard = e.target.closest('.scenario-card');
+            e.dataTransfer.effectAllowed = 'move';
+            draggedCard.style.opacity = '0.5';
+        }
+
+        function handleDragEnd(e) {
+            if (draggedCard) {
+                draggedCard.style.opacity = '1';
+            }
+        }
+
+        // Setup drop zones
+        ['transientZone', 'steadyZone'].forEach(zoneId => {
+            const zone = document.getElementById(zoneId);
+            const cardContainer = zone.querySelector('[id$="Cards"]');
+
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('drag-over');
+            });
+
+            zone.addEventListener('dragleave', () => {
+                zone.classList.remove('drag-over');
+            });
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                
+                if (!draggedCard) return;
+
+                const cardId = draggedCard.dataset.id;
+                if (placedCards.has(cardId)) return; // Already placed
+
+                const correctType = draggedCard.dataset.type;
+                const droppedType = zoneId === 'transientZone' ? 'transient' : 'steady';
+                
+                const isCorrect = correctType === droppedType;
+                
+                // Create feedback card
+                const feedbackCard = draggedCard.cloneNode(true);
+                feedbackCard.draggable = false;
+                feedbackCard.className = 'scenario-card p-3 rounded-lg shadow-md ' + (isCorrect ? 'correct' : 'incorrect');
+                
+                const scenario = scenarios.find(s => s.id == cardId);
+                const explanation = document.createElement('div');
+                explanation.className = 'text-xs mt-2 p-2 bg-white rounded';
+                explanation.innerHTML = `<strong>${isCorrect ? '✓ Correct!' : '✗ Wrong!'}</strong><br>${scenario.explanation}`;
+                feedbackCard.appendChild(explanation);
+                
+                cardContainer.appendChild(feedbackCard);
+                
+                // Remove original card
+                draggedCard.remove();
+                
+                placedCards.add(cardId);
+                attempts++;
+                
+                if (isCorrect) {
+                    score++;
+                    document.getElementById('score').textContent = score;
+                }
+
+                // Check if all placed
+                if (placedCards.size === scenarios.length) {
+                    showDetectiveResults();
+                }
+
+                draggedCard = null;
+            });
+        });
+
+        function resetDetective() {
+            score = 0;
+            attempts = 0;
+            placedCards.clear();
+            document.getElementById('score').textContent = '0';
+            document.getElementById('transientCards').innerHTML = '';
+            document.getElementById('steadyCards').innerHTML = '';
+            document.getElementById('detectiveResults').classList.add('hidden');
+            initDetective();
+        }
+
+        function showDetectiveResults() {
+            const results = document.getElementById('detectiveResults');
+            results.classList.remove('hidden');
+            
+            const percentage = (score / scenarios.length * 100).toFixed(0);
+            let message = '';
+            let colorClass = '';
+            
+            if (percentage === 100) {
+                message = '🎉 Perfect! You mastered the difference!';
+                colorClass = 'bg-green-100 border-green-500 text-green-800';
+            } else if (percentage >= 70) {
+                message = '👍 Good job! Review the ones you missed.';
+                colorClass = 'bg-blue-100 border-blue-500 text-blue-800';
+            } else {
+                message = '📚 Keep practicing! Review ∂T/∂t concept.';
+                colorClass = 'bg-yellow-100 border-yellow-500 text-yellow-800';
+            }
+            
+            results.innerHTML = `
+                <div class="p-6 rounded-lg border-4 ${colorClass}">
+                    <h3 class="text-2xl font-bold mb-2">${message}</h3>
+                    <p class="text-lg">Final Score: ${score} / ${scenarios.length} (${percentage}%)</p>
+                </div>
+            `;
+        }
+
+        // Evolution Mode Functions
+        function initEvolution() {
+            const container = document.getElementById('evolutionScenarios');
+            container.innerHTML = '';
+            
+            evolutionScenarios.forEach((scenario, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'px-4 py-3 rounded-lg text-sm bg-gray-200 hover:bg-gray-300 text-left';
+                btn.innerHTML = `<strong>${scenario.name}</strong><br><span class="text-xs">${scenario.description}</span>`;
+                btn.onclick = () => selectEvolutionScenario(idx);
+                container.appendChild(btn);
+            });
+        }
+
+        function selectEvolutionScenario(idx) {
+            currentScenario = evolutionScenarios[idx];
+            resetEvolution();
+            document.getElementById('scenarioTitle').textContent = currentScenario.name;
+            drawEvolutionGraph();
+        }
+
+        function playEvolution() {
+            if (!currentScenario) {
+                alert('Please select a scenario first!');
+                return;
+            }
+
+            isEvolutionPlaying = true;
+            document.getElementById('playEvolution').textContent = '⏸ Pause';
+            document.getElementById('playEvolution').onclick = pauseEvolution;
+            document.getElementById('steadyStateBtn').disabled = false;
+            
+            evolutionInterval = setInterval(() => {
+                evolutionTime += 10;
+                updateEvolution();
+            }, 100);
+        }
+
+        function pauseEvolution() {
+            isEvolutionPlaying = false;
+            clearInterval(evolutionInterval);
+            document.getElementById('playEvolution').textContent = '▶ Resume';
+            document.getElementById('playEvolution').onclick = playEvolution;
+        }
+
+        function resetEvolution() {
+            evolutionTime = 0;
+            isEvolutionPlaying = false;
+            clearInterval(evolutionInterval);
+            document.getElementById('playEvolution').textContent = '▶ Start';
+            document.getElementById('playEvolution').onclick = playEvolution;
+            document.getElementById('steadyStateBtn').disabled = true;
+            document.getElementById('evolutionFeedback').classList.add('hidden');
+            updateEvolution();
+        }
+
+        function updateEvolution() {
+            if (!currentScenario) return;
+
+            const T_hot = 100;
+            const T_cold = 20;
+            const L = 0.1; // thickness
+            const x = L / 2; // midpoint
+            const alpha = currentScenario.alpha;
+            
+            // Simplified transient solution at midpoint
+            const eta = x / (2 * Math.sqrt(alpha * evolutionTime + 0.001));
+            const erfcValue = 1 - erf(eta);
+            const temp = T_cold + (T_hot - T_cold) * erfcValue;
+            
+            // Calculate rate of change (approximation)
+            const temp_prev = evolutionTime > 10 ? 
+                T_cold + (T_hot - T_cold) * (1 - erf(x / (2 * Math.sqrt(alpha * (evolutionTime - 10) + 0.001)))) : T_cold;
+            const rate = (temp - temp_prev) / 10;
+
+            document.getElementById('timeElapsed').textContent = evolutionTime.toFixed(0);
+            document.getElementById('tempMid').textContent = temp.toFixed(1);
+            document.getElementById('tempRate').textContent = rate.toFixed(4);
+
+            drawEvolutionGraph();
+        }
+
+        function drawEvolutionGraph() {
+            const svg = document.getElementById('evolutionGraph');
+            const width = svg.clientWidth || 500;
+            const height = 350;
+            svg.innerHTML = '';
+            svg.setAttribute('width', width);
+            svg.setAttribute('height', height);
+
+            if (!currentScenario) return;
+
+            const margin = {top: 40, right: 20, bottom: 50, left: 60};
+            const plotWidth = width - margin.left - margin.right;
+            const plotHeight = height - margin.top - margin.bottom;
+
+            const T_hot = 100;
+            const T_cold = 20;
+            const maxTime = Math.min(currentScenario.steadyTime * 2, 3600);
+
+            // Draw axes
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
+
+            // Y-axis
+            const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            yAxis.setAttribute('x1', 0);
+            yAxis.setAttribute('y1', 0);
+            yAxis.setAttribute('x2', 0);
+            yAxis.setAttribute('y2', plotHeight);
+            yAxis.setAttribute('stroke', 'black');
+            yAxis.setAttribute('stroke-width', '2');
+            g.appendChild(yAxis);
+
+            // X-axis
+            const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            xAxis.setAttribute('x1', 0);
+            xAxis.setAttribute('y1', plotHeight);
+            xAxis.setAttribute('x2', plotWidth);
+            xAxis.setAttribute('y2', plotHeight);
+            xAxis.setAttribute('stroke', 'black');
+            xAxis.setAttribute('stroke-width', '2');
+            g.appendChild(xAxis);
+
+            // Draw steady-state line
+            const steadyY = plotHeight - ((T_hot + T_cold) / 2 - T_cold) / (T_hot - T_cold) * plotHeight;
+            const steadyLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            steadyLine.setAttribute('x1', 0);
+            steadyLine.setAttribute('y1', steadyY);
+            steadyLine.setAttribute('x2', plotWidth);
+            steadyLine.setAttribute('y2', steadyY);
+            steadyLine.setAttribute('stroke', '#10b981');
+            steadyLine.setAttribute('stroke-width', '2');
+            steadyLine.setAttribute('stroke-dasharray', '5,5');
+            g.appendChild(steadyLine);
+
+            // Label for steady-state
+            const steadyLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            steadyLabel.setAttribute('x', plotWidth - 100);
+            steadyLabel.setAttribute('y', steadyY - 5);
+            steadyLabel.setAttribute('font-size', '12');
+            steadyLabel.setAttribute('fill', '#10b981');
+            steadyLabel.textContent = 'Steady-State';
+            g.appendChild(steadyLabel);
+
+            // Draw temperature curve
+            const points = [];
+            const L = 0.1;
+            const x = L / 2;
+            const alpha = currentScenario.alpha;
+
+            for (let t = 0; t <= Math.min(evolutionTime, maxTime); t += maxTime / 100) {
+                const eta = x / (2 * Math.sqrt(alpha * t + 0.001));
+                const erfcValue = 1 - erf(eta);
+                const temp = T_cold + (T_hot - T_cold) * erfcValue;
+                
+                const screenX = (t / maxTime) * plotWidth;
+                const screenY = plotHeight - ((temp - T_cold) / (T_hot - T_cold)) * plotHeight;
+                points.push(`${screenX},${screenY}`);
+            }
+
+            if (points.length > 0) {
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+                path.setAttribute('points', points.join(' '));
+                path.setAttribute('fill', 'none');
+                path.setAttribute('stroke', '#dc2626');
+                path.setAttribute('stroke-width', '3');
+                g.appendChild(path);
+
+                // Current point indicator
+                if (evolutionTime > 0) {
+                    const lastPoint = points[points.length - 1].split(',');
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', lastPoint[0]);
+                    circle.setAttribute('cy', lastPoint[1]);
+                    circle.setAttribute('r', 5);
+                    circle.setAttribute('fill', '#dc2626');
+                    g.appendChild(circle);
+                }
+            }
+
+            // Axis labels
+            const yLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            yLabel.setAttribute('transform', `translate(-40, ${plotHeight/2}) rotate(-90)`);
+            yLabel.setAttribute('text-anchor', 'middle');
+            yLabel.setAttribute('font-size', '14');
+            yLabel.textContent = 'Temperature at Midpoint (°C)';
+            g.appendChild(yLabel);
+
+            const xLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            xLabel.setAttribute('x', plotWidth / 2);
+            xLabel.setAttribute('y', plotHeight + 35);
+            xLabel.setAttribute('text-anchor', 'middle');
+            xLabel.setAttribute('font-size', '14');
+            xLabel.textContent = 'Time (s)';
+            g.appendChild(xLabel);
+
+            // Y-axis tick labels
+            [T_cold, (T_hot + T_cold)/2, T_hot].forEach(temp => {
+                const y = plotHeight - ((temp - T_cold) / (T_hot - T_cold)) * plotHeight;
+                const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                tick.setAttribute('x1', -5);
+                tick.setAttribute('y1', y);
+                tick.setAttribute('x2', 0);
+                tick.setAttribute('y2', y);
+                tick.setAttribute('stroke', 'black');
+                tick.setAttribute('stroke-width', '2');
+                g.appendChild(tick);
+
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                label.setAttribute('x', -10);
+                label.setAttribute('y', y + 5);
+                label.setAttribute('text-anchor', 'end');
+                label.setAttribute('font-size', '12');
+                label.textContent = temp.toFixed(0);
+                g.appendChild(label);
+            });
+
+            // X-axis tick labels
+            [0, maxTime/2, maxTime].forEach(time => {
+                const x_pos = (time / maxTime) * plotWidth;
+                const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                tick.setAttribute('x1', x_pos);
+                tick.setAttribute('y1', plotHeight);
+                tick.setAttribute('x2', x_pos);
+                tick.setAttribute('y2', plotHeight + 5);
+                tick.setAttribute('stroke', 'black');
+                tick.setAttribute('stroke-width', '2');
+                g.appendChild(tick);
+
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                label.setAttribute('x', x_pos);
+                label.setAttribute('y', plotHeight + 20);
+                label.setAttribute('text-anchor', 'middle');
+                label.setAttribute('font-size', '12');
+                label.textContent = time.toFixed(0);
+                g.appendChild(label);
+            });
+
+            svg.appendChild(g);
+        }
+
+        function checkSteadyState() {
+            if (!currentScenario) return;
+
+            pauseEvolution();
+
+            const feedback = document.getElementById('evolutionFeedback');
+            feedback.classList.remove('hidden');
+
+            const tolerance = 0.9; // 90% of the way there
+            const timeTaken = evolutionTime;
+            const steadyTime = currentScenario.steadyTime;
+
+            const isCorrect = timeTaken >= steadyTime * tolerance;
+
+            if (isCorrect) {
+                feedback.className = 'p-4 rounded-lg border-4 bg-green-100 border-green-500';
+                feedback.innerHTML = `
+                    <h4 class="text-xl font-bold text-green-800 mb-2">✓ Correct!</h4>
+                    <p class="text-sm">Yes! The temperature has stabilized. ∂T/∂t ≈ 0.</p>
+                    <p class="text-sm mt-2">You can now use steady-state analysis: <strong>q = k·A·ΔT/L</strong></p>
+                `;
+            } else {
+                feedback.className = 'p-4 rounded-lg border-4 bg-red-100 border-red-500';
+                feedback.innerHTML = `
+                    <h4 class="text-xl font-bold text-red-800 mb-2">✗ Too Early!</h4>
+                    <p class="text-sm">Temperature is still changing! Look at the graph - it hasn't flattened yet.</p>
+                    <p class="text-sm mt-2">∂T/∂t ≠ 0, so you need transient analysis.</p>
+                    <p class="text-sm mt-2"><em>Hint: Wait until the curve gets closer to the green dashed line.</em></p>
+                    <button onclick="resetEvolution(); document.getElementById('evolutionFeedback').classList.add('hidden');" 
+                            class="mt-3 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Try Again</button>
+                `;
+            }
+        }
+
+        // Error function (same as before)
+        function erf(x) {
+            const sign = x >= 0 ? 1 : -1;
+            x = Math.abs(x);
+            const a1 =  0.254829592;
+            const a2 = -0.284496736;
+            const a3 =  1.421413741;
+            const a4 = -1.453152027;
+            const a5 =  1.061405429;
+            const p  =  0.3275911;
+            const t = 1.0 / (1.0 + p * x);
+            const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+            return sign * y;
+        }
+
+        // Mode switching
+        function showMode(mode) {
+            if (mode === 'detective') {
+                document.getElementById('detectiveMode').classList.remove('hidden');
+                document.getElementById('evolutionMode').classList.add('hidden');
+                document.getElementById('detectiveTab').className = 'tab-active px-6 py-3 rounded-lg font-semibold text-lg transition-all';
+                document.getElementById('evolutionTab').className = 'tab-inactive px-6 py-3 rounded-lg font-semibold text-lg transition-all';
+            } else {
+                document.getElementById('detectiveMode').classList.add('hidden');
+                document.getElementById('evolutionMode').classList.remove('hidden');
+                document.getElementById('detectiveTab').className = 'tab-inactive px-6 py-3 rounded-lg font-semibold text-lg transition-all';
+                document.getElementById('evolutionTab').className = 'tab-active px-6 py-3 rounded-lg font-semibold text-lg transition-all';
+            }
+        }
+
+        // Initialize on load
+        initDetective();
+        initEvolution();
+    </script>
+</body>
+</html>
